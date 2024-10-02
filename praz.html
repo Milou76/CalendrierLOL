@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendrier des Semaines Louées</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-image: url('DJI_01491.JPG'); /* Image de fond */
+            background-size: cover;
+            margin: 0;
+            padding: 20px;
+            color: white; /* Couleur de texte blanche pour contraste */
+        }
+        #loginContainer {
+            display: flex;
+            flex-direction: column;
+            max-width: 300px;
+            margin: auto;
+            background-color: rgba(0, 0, 0, 0.7); /* Fond semi-transparent */
+            padding: 20px;
+            border-radius: 10px;
+        }
+        #calendarContainer {
+            display: none;
+            margin-top: 20px;
+            background-color: rgba(0, 0, 0, 0.7); /* Fond semi-transparent */
+            padding: 20px;
+            border-radius: 10px;
+        }
+        .week {
+            padding: 10px;
+            border: 1px solid #ccc;
+            margin: 5px 0;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .week.louee {
+            background-color: rgba(255, 0, 0, 0.5); /* Couleur pour les semaines louées */
+        }
+        .week.disponible {
+            background-color: rgba(0, 255, 0, 0.5); /* Couleur pour les semaines disponibles */
+        }
+        /* Modale */
+        #modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7); /* Arrière-plan semi-transparent */
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        #modalContent {
+            background: white;
+            color: black;
+            padding: 20px;
+            border-radius: 5px;
+            width: 300px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            animation: fadeIn 0.5s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        button {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #007BFF;
+            border: none;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #summary {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 10px;
+            color: white;
+            z-index: 1000;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+
+    <div id="loginContainer">
+        <h2>Connexion</h2>
+        <input type="text" id="username" placeholder="Nom d'utilisateur" required>
+        <input type="password" id="password" placeholder="Mot de passe" required>
+        <button id="loginButton">Se connecter</button>
+        <p id="errorMessage" style="color: red;"></p>
+    </div>
+
+    <div id="calendarContainer">
+        <h2>Calendrier des Semaines Louées</h2>
+        <div id="week-list"></div>
+    </div>
+
+    <div id="summary">
+        <div id="total-rent">Total du Loyer : 0€</div>
+        <div id="weeks-rented">Semaines Louées : 0</div>
+    </div>
+
+    <div id="modal">
+        <div id="modalContent">
+            <h3>Détails de la Semaine</h3>
+            <p><strong>Semaine:</strong> <span id="week-display"></span></p>
+            <p><strong>Date de Début:</strong> <span id="start-display"></span></p>
+            <p><strong>Date de Fin:</strong> <span id="end-display"></span></p>
+            <p><strong>Nom:</strong> <span id="nom-display"></span></p>
+            <p><strong>Téléphone:</strong> <span id="telephone-display"></span></p>
+            <p><strong>Adresse:</strong> <span id="adresse-display"></span></p>
+            <p><strong>Email:</strong> <span id="email-display"></span></p>
+            <p><strong>Support:</strong> <span id="support-display"></span></p>
+            <p><strong>Nombre de personnes:</strong> <span id="nb-personnes-display"></span></p>
+            <p><strong>Loyer total:</strong> <span id="loyer-total-display"></span></p>
+            <p><strong>Date de paiement:</strong> <span id="date-paiement-display"></span></p>
+            <p><strong>Contrat envoyé:</strong> <span id="contrat-envoye-display"></span></p>
+            <p><strong>Retour contrat:</strong> <span id="retour-contrat-display"></span></p>
+            <p><strong>Caution reçue:</strong> <span id="caution-recue-display"></span></p>
+            <p><strong>Attestation assurance:</strong> <span id="attestation-assurance-display"></span></p>
+            <p><strong>Validé:</strong> <span id="valide-display"></span></p>
+            <button id="download-pdf">Télécharger PDF</button>
+            <button id="close-modal">Fermer</button>
+        </div>
+    </div>
+
+    <script>
+        const correctUsername = 'Milou'; 
+        const correctPassword = 'mdp'; 
+        const sessionDuration = 10 * 60 * 1000; /* 1 minute */
+
+        const SHEET_ID = '177w2qcJ2ScMXB6m-WkkJESGoRl_r9FtxhnineuyjmRE'; // Remplace par ton ID de feuille
+        const API_KEY = 'AIzaSyAEeiHh74hDUPTijbwP0MxvrBaWQbw4V-I'; // Remplace par ta clé API
+        const DATA_RANGE = 'TKT!A2:T27'; // Changement de la plage de données
+
+        const WEEKS_RENTED_CELL = 'TKT!Y2'; // Cellule pour le nombre de semaines louées
+        const TOTAL_RENT_CELL = 'TKT!Y3'; // Cellule pour le total du loyer
+
+        let weeks = [];
+
+        const sessionData = localStorage.getItem('session');
+        if (sessionData) {
+            const session = JSON.parse(sessionData);
+            if (new Date().getTime() - session.timestamp < sessionDuration) {
+                document.getElementById('loginContainer').style.display = 'none';
+                document.getElementById('calendarContainer').style.display = 'block';
+                fetchData(); 
+            } else {
+                localStorage.removeItem('session');
+            }
+        }
+
+        // Fonction de connexion
+        function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            if (username === correctUsername && password === correctPassword) {
+                const session = {
+                    timestamp: new Date().getTime()
+                };
+                localStorage.setItem('session', JSON.stringify(session));
+                document.getElementById('loginContainer').style.display = 'none';
+                document.getElementById('calendarContainer').style.display = 'block';
+                fetchData(); 
+            } else {
+                document.getElementById('errorMessage').innerText = 'Identifiant ou mot de passe incorrect.';
+            }
+        }
+
+        // Événement lors du clic sur le bouton de connexion
+        document.getElementById('loginButton').addEventListener('click', login);
+
+        // Ajout de la gestion de la touche "Entrée"
+        document.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                login();
+            }
+        });
+
+        function fetchData() {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${DATA_RANGE}?key=${API_KEY}`;
+            const weeksRentedUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${WEEKS_RENTED_CELL}?key=${API_KEY}`;
+            const totalRentUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${TOTAL_RENT_CELL}?key=${API_KEY}`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    weeks = data.values.map(row => ({
+                        week: row[0],
+                        start: row[1],
+                        end: row[2],
+                        name: row[3],
+                        phone: row[4],
+                        address: row[5],
+                        email: row[6],
+                        support: row[7],
+                        people: row[8],
+                        totalRent: row[11],
+                        paymentDate: row[14],
+                        contractSent: row[15],
+                        contractReturned: row[16],
+                        depositReceived: row[17],
+                        insuranceCertificate: row[18],
+                        validated: row[20]
+                    }));
+
+                    renderWeeks();
+                });
+
+            fetch(weeksRentedUrl)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('weeks-rented').innerText = `Semaines Louées : ${data.values[0][0]}`;
+                });
+
+            fetch(totalRentUrl)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('total-rent').innerText = `Total du Loyer : ${data.values[0][0]}€`;
+                });
+        }
+
+        function renderWeeks() {
+            const weekList = document.getElementById('week-list');
+            weekList.innerHTML = '';
+
+            weeks.forEach((week, index) => {
+            const weekDiv = document.createElement('div');
+            weekDiv.className = 'week ' + (week.name ? 'louee' : 'disponible'); // Applique une classe basée sur l'état de la semaine
+            weekDiv.innerText = `Semaine ${week.week} : (Du ${week.start} au ${week.end})`; // Affiche les détails de la semaine
+            weekDiv.addEventListener('click', () => openModal(index)); // Ouvre le modal avec les détails de la semaine
+            weekList.appendChild(weekDiv); // Ajoute la semaine à la liste
+            });
+        }
+
+        function openModal(index) {
+            const week = weeks[index];
+            document.getElementById('week-display').innerText = week.week;
+            document.getElementById('start-display').innerText = week.start;
+            document.getElementById('end-display').innerText = week.end;
+            document.getElementById('nom-display').innerText = week.name || 'Non renseigné';
+            document.getElementById('telephone-display').innerText = week.phone || 'Non renseigné';
+            document.getElementById('adresse-display').innerText = week.address || 'Non renseigné';
+            document.getElementById('email-display').innerText = week.email || 'Non renseigné';
+            document.getElementById('support-display').innerText = week.support || 'Non renseigné';
+            document.getElementById('nb-personnes-display').innerText = week.people || 'Non renseigné';
+            document.getElementById('loyer-total-display').innerText = week.totalRent || 'Non renseigné';
+            document.getElementById('date-paiement-display').innerText = week.paymentDate || 'Non renseigné';
+            document.getElementById('contrat-envoye-display').innerText = week.contractSent || 'Non renseigné';
+            document.getElementById('retour-contrat-display').innerText = week.contractReturned || 'Non renseigné';
+            document.getElementById('caution-recue-display').innerText = week.depositReceived || 'Non renseigné';
+            document.getElementById('attestation-assurance-display').innerText = week.insuranceCertificate || 'Non renseigné';
+            document.getElementById('valide-display').innerText = week.validated || 'Non renseigné';
+
+            document.getElementById('modal').style.display = 'flex';
+        }
+
+        document.getElementById('close-modal').addEventListener('click', () => {
+            document.getElementById('modal').style.display = 'none';
+        });
+
+        document.getElementById('download-pdf').addEventListener('click', () => {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    // Texte du contrat
+    const title = "CONTRAT DE LOCATION SAISONNIERE";
+    const fontSize = 16;
+
+    // Définir les dimensions du cadre
+    const titleWidth = doc.getTextWidth(title) + 10; // Largeur du texte + un peu de marge
+    const titleX = (doc.internal.pageSize.width - titleWidth) / 2; // Centre le cadre
+    const titleY = 20; // Position verticale du cadre
+    const titleHeight = 10; // Hauteur du cadre
+
+    // Dessiner le cadre
+    doc.setDrawColor(0); // Couleur du cadre
+    doc.rect(titleX, titleY, titleWidth, titleHeight); // Cadre
+
+    // Définir la taille de la police et le style
+    doc.setFontSize(fontSize);
+    doc.setFont("helvetica", "bold"); // Mettre le texte en gras
+
+    // Écrire le texte centré
+    doc.text(title, titleX + 3, titleY + 7); // Centrer le texte dans le cadre
+    
+    doc.setFontSize(13);
+
+    doc.setFont("arial", "bold"); 
+    doc.text(`Entre les soussignés,`, 20, 45);    doc.setFont("arial", "normal");
+    doc.text(`M.et Mme BISSON Xavier`, 15, 55);
+    doc.text(`Né le 26 mars 1976 à GISORS 27140 `, 15, 60);
+
+
+
+    doc.setFont("arial", "bold"); 
+    doc.text(`Tel : 06.86.92.05.70`, 15, 70);   
+    doc.setFont("arial", "normal");
+    doc.text(`désigné(s) ci-après le bailleur`, 15, 80);
+    doc.setFont("arial", "bold"); 
+    doc.text(`et`, 15, 90 );
+    doc.setFont("arial", "normal");
+    doc.text(`Mr/Mme ${document.getElementById('nom-display').innerText || 'Non renseigné'}`, 15, 95);
+    doc.text(`demeure ${document.getElementById('adresse-display').innerText || 'Non renseigné'}`, 15, 100);
+    doc.text(`Tel portable : ${document.getElementById('telephone-display').innerText || 'Non renseigné'}`, 15, 105);
+    doc.text(`Mail : ${document.getElementById('email-display').innerText || 'Non renseigné'}`, 15, 110);
+    doc.text(`désigné(s) ci-après le locataire`, 15, 115);
+    doc.setFont("arial", "bold"); 
+    doc.text(`il est convenu d'une location meublée dont la désignation suit :`, 22, 125);
+    doc.text(`Adresse du logement donné en location :`, 15, 135);
+    doc.setFont("arial", "normal");
+    doc.text(`Résidence VESINE`, 15, 145);
+    doc.text(`Étage : 5ème et dernier....................Porte...64....................Superficie 29m2 (Loi Carrez)`, 15, 155); 
+    doc.setFont("arial", "bold"); 
+    doc.text(`Type du logement donné en location :`, 15, 165);
+    doc.setFont("arial", "normal");
+    doc.text(`Appartement`, 15, 170);
+    doc.setFont("arial", "bold"); 
+    doc.text(`Dépendances dont le locataire a la jouissance exclusive :`, 15, 180);
+    doc.setFont("arial", "normal");
+    doc.text(`Parking en sous sol n°64          Casier à ski n°64               Balcon`, 15, 185);
+    doc.setFont("arial", "bold"); 
+    doc.text(`Désignation des locaux et équipements privatifs (nombre de pièces, confort, etc...)`, 15, 190);
+    doc.setFont("arial", "normal");
+    doc.text("-  T2 Séjour ouvert sur kitchenette équipée :",15, 200);
+    doc.text("  Cafetière classique à filtre (café moulu), bouilloire, mini four GRILL, appareil à raclette, plancha, 2 ",15, 205);
+    doc.text("plaques de cuisson électrique, Grille pain", 15, 210);
+    doc.text("- Coin salon (1 couchage BZ 140), avec TV écran plat + 1 couchage appoint pour enfant,  ",17, 215);
+    doc.text("- Une chambre séparée avec lit 140. ",17, 220);
+    doc.text("- Une mezzanine avec lit de 140  ",17, 225);
+    doc.text("- 1 Salle de douche  ",17, 230);
+    doc.text("- 1 WC séparé  ",17, 235);
+    doc.text("1 Balcon exposé PLEIN SUD avec vue panoramique sur la montagne. ",15, 245);
+    
+//Début deuxième page
+doc.addPage();
+doc.setFont("arial", "bold"); 
+doc.text("Énumération des parties et équipements communs (ascenseur, local à vélo, escalier principal)", 15, 30);
+doc.setFont("arial", "normal");
+doc.text("Ascenseur, escalier principal", 15, 35);
+doc.text("Obligation de mettre les skis et chaussures de ski dans le CASIER a ski en RDC prévu à cet effet.", 15, 40);
+doc.text("Il est formellement interdit de monter dans l'ascenseur et de rentrer dans le logement en chaussure ", 15, 45);
+doc.text("de ski ni de les stocker sur balcon ou couloir", 15, 50); 
+
+doc.setFont("arial", "bold"); 
+doc.text("État des lieux contradictoire", 15, 70);
+doc.setFont("arial", "normal");
+doc.text("L'état des lieux a fait l'objet d'un document dressé en autant d'exemplaires qu'il y a de parties", 15, 75);
+doc.text("soit ....2....exemplaires. Il est annexé au présent contrat.", 15, 80); //juste les lignes
+
+doc.setFontSize(14);
+doc.setFont("arial", "bold");
+doc.text("Sanitaires (cocher les cases des équipements présents) :", 15, 90);
+doc.setFont("arial", "normal");
+doc.text("x Lavabo(s)    x WC", 15, 95);
+doc.text("x Douche(s)    x Évier un bac", 15, 100);  //juste les lignes
+
+doc.setFontSize(14);
+doc.text("Électroménager (cocher les cases des équipements présents) :", 15, 110);
+doc.text("x Réfrigérateur    x Plaque cuisson    x Appareil à raclette    x Plancha", 15, 115);
+doc.text("x Four               x Micro-ondes       x Grille-pain            x Lave-vaisselle 10 couverts", 15, 120);
+doc.text("x Aspirateur        x Fer à repasser    x TV Écran plat          x Cafetière Nespresso", 15, 125);
+
+doc.setFontSize(14);
+doc.setFont("arial", "bold");
+doc.text("Mobilier (préciser le nombre de lits à une ou deux places, les meubles les plus importants):", 15, 135);
+doc.setFont("arial", "normal");
+doc.text("• 1 Lit de 140x200 dans la chambre 1 lit BZ dans le salon (couchage 140x200, 1 lit d’appoint 70x190", 15, 140);
+doc.text("• 1 lit de 140 x 200 sur la mezzanine", 15, 145);
+doc.text("• ..................................................................................................", 15, 150);
+doc.text("• ..................................................................................................", 15, 155);
+
+
+doc.setFontSize(14);
+doc.setFont("arial", "bold");
+doc.text("Linge (cocher les cases des éléments fournis) :", 15, 165);
+doc.setFont("arial", "normal");
+doc.text("o Couverture(s)    o Nappe(s)", 15, 175);
+doc.text("o  Autre(s) (préciser la présence de serviettes de toilette, torchons à vaisselle, serviettes de table  ", 15, 180);
+doc.text("et tout autre renseignement de nature à permettre au locataire de constituer son trousseau) ", 15, 185);
+
+doc.text('Le linge de maison n’est pas fourni : Torchons serviettes de toilette draps.', 15, 195)
+doc.text("Est fourni :", 15, 200);
+doc.text('Allaise jetables pour protéger tous les matelas obligatoire a mettre en place sur l’ensemble des ', 15, 205)
+doc.text('literies pour plus d’hygiène', 15, 210)
+
+doc.setFontSize(14);
+doc.setFont("arial", "bold");
+doc.text("Vaisselle", 15, 220);
+doc.setFont("arial", "normal");
+doc.text("La vaisselle et les ustensiles sont suffisants pour ...7... personnes.", 15, 225);
+doc.setFontSize(14);
+doc.setFont("arial", "bold");
+doc.text("Réseaux (cocher les cases des éléments fournis) :", 15, 235);
+doc.setFont("arial", "normal");
+doc.text("x Eau froide    x Eau chaude    x Chauffage électrique    x Sèche-serviettes Salle de Bain", 15, 240);
+doc.setFont("arial", "bold");
+doc.text("Inventaire contradictoire", 15, 250);
+doc.setFont("arial", "normal");
+doc.text("La présente location étant consentie et acceptée en meublé, un inventaire contradictoire des meubles", 15, 255);
+doc.text("sera établi lors de la remise des clés au locataire et lors de la restitution de celles-ci. L'inventaire ", 15, 260);
+doc.text("sera annexé au présent contrat. Le preneur sera responsable de toute détérioration ou perte pouvant", 15, 265);
+doc.text('survenir à ce mobilier.', 15, 270)
+
+    // Sauvegarde du document
+    doc.save(`Contrat ${document.getElementById('nom-display').innerText}`);
+});
+    </script>
+</body>
+</html>
