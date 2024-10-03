@@ -279,26 +279,7 @@
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
 
-            const weekInfo = `
-                Semaine: ${document.getElementById('week-display').innerText}
-                Date de Début: ${document.getElementById('start-display').innerText}
-                Date de Fin: ${document.getElementById('end-display').innerText}
-                Nom: ${document.getElementById('nom-display').innerText}
-                Téléphone: ${document.getElementById('telephone-display').innerText}
-                Adresse: ${document.getElementById('adresse-display').innerText}
-                Email: ${document.getElementById('email-display').innerText}
-                Support: ${document.getElementById('support-display').innerText}
-                Nombre de personnes: ${document.getElementById('nb-personnes-display').innerText}
-                Loyer total: ${document.getElementById('loyer-total-display').innerText}
-                Date de paiement: ${document.getElementById('date-paiement-display').innerText}
-                Contrat envoyé: ${document.getElementById('contrat-envoye-display').innerText}
-                Retour contrat: ${document.getElementById('retour-contrat-display').innerText}
-                Caution reçue: ${document.getElementById('caution-recue-display').innerText}
-                Attestation assurance: ${document.getElementById('attestation-assurance-display').innerText}
-                Validé: ${document.getElementById('valide-display').innerText}
-            `;
-
-            doc.text(weekInfo, 10, 10);
+            doc.text(" pas de pdf pour le moment", 10, 10);
             doc.save(`Semaine_${document.getElementById('week-display').innerText}.pdf`);
         });
     </script>
