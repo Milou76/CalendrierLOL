@@ -140,7 +140,7 @@
     <script>
         const correctUsername = 'Milou'; 
         const correctPassword = 'mdp'; 
-        const sessionDuration = 10 * 60 * 1000; /* 1 minute */
+        const sessionDuration = 10 * 60 * 1000; /* 10 minutes */
 
         const SHEET_ID = '177w2qcJ2ScMXB6m-WkkJESGoRl_r9FtxhnineuyjmRE'; // Remplace par ton ID de feuille
         const API_KEY = 'AIzaSyAEeiHh74hDUPTijbwP0MxvrBaWQbw4V-I'; // Remplace par ta clé API
@@ -218,19 +218,22 @@
                     }));
 
                     renderWeeks();
-                });
+                })
+                .catch(error => console.error('Error fetching data:', error));
 
             fetch(weeksRentedUrl)
                 .then(response => response.json())
                 .then(data => {
                     document.getElementById('weeks-rented').innerText = `Semaines Louées : ${data.values[0][0]}`;
-                });
+                })
+                .catch(error => console.error('Error fetching weeks rented:', error));
 
             fetch(totalRentUrl)
                 .then(response => response.json())
                 .then(data => {
                     document.getElementById('total-rent').innerText = `Total du Loyer : ${data.values[0][0]}€`;
-                });
+                })
+                .catch(error => console.error('Error fetching total rent:', error));
         }
 
         function renderWeeks() {
@@ -238,11 +241,11 @@
             weekList.innerHTML = '';
 
             weeks.forEach((week, index) => {
-            const weekDiv = document.createElement('div');
-            weekDiv.className = 'week ' + (week.name ? 'louee' : 'disponible'); // Applique une classe basée sur l'état de la semaine
-            weekDiv.innerText = `Semaine ${week.week} : (Du ${week.start} au ${week.end})`; // Affiche les détails de la semaine
-            weekDiv.addEventListener('click', () => openModal(index)); // Ouvre le modal avec les détails de la semaine
-            weekList.appendChild(weekDiv); // Ajoute la semaine à la liste
+                const weekDiv = document.createElement('div');
+                weekDiv.className = 'week ' + (week.name ? 'louee' : 'disponible'); // Applique une classe basée sur l'état de la semaine
+                weekDiv.innerText = `Semaine ${week.week} : (Du ${week.start} au ${week.end})`; // Affiche les détails de la semaine
+                weekDiv.addEventListener('click', () => openModal(index)); // Ouvre le modal avec les détails de la semaine
+                weekList.appendChild(weekDiv); // Ajoute la semaine à la liste
             });
         }
 
@@ -273,15 +276,31 @@
         });
 
         document.getElementById('download-pdf').addEventListener('click', () => {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
 
-    
-doc.text('Pas de pdf pour le moment.', 15, 270)
+            const weekInfo = `
+                Semaine: ${document.getElementById('week-display').innerText}
+                Date de Début: ${document.getElementById('start-display').innerText}
+                Date de Fin: ${document.getElementById('end-display').innerText}
+                Nom: ${document.getElementById('nom-display').innerText}
+                Téléphone: ${document.getElementById('telephone-display').innerText}
+                Adresse: ${document.getElementById('adresse-display').innerText}
+                Email: ${document.getElementById('email-display').innerText}
+                Support: ${document.getElementById('support-display').innerText}
+                Nombre de personnes: ${document.getElementById('nb-personnes-display').innerText}
+                Loyer total: ${document.getElementById('loyer-total-display').innerText}
+                Date de paiement: ${document.getElementById('date-paiement-display').innerText}
+                Contrat envoyé: ${document.getElementById('contrat-envoye-display').innerText}
+                Retour contrat: ${document.getElementById('retour-contrat-display').innerText}
+                Caution reçue: ${document.getElementById('caution-recue-display').innerText}
+                Attestation assurance: ${document.getElementById('attestation-assurance-display').innerText}
+                Validé: ${document.getElementById('valide-display').innerText}
+            `;
 
-    // Sauvegarde du document
-    doc.save(`Test}`);
-});
+            doc.text(weekInfo, 10, 10);
+            doc.save(`Semaine_${document.getElementById('week-display').innerText}.pdf`);
+        });
     </script>
 </body>
 </html>
