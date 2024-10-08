@@ -57,7 +57,7 @@ function login() {
 }
 // Fonction pour récupérer les données des semaines
 function fetchData() {
-    const url = 'http://localhost:3005/api/weeks'; // Appelle ton API ici
+    const url = 'https://eight-brazen-workshop.glitch.me/api/weeks'; // Appelle ton API ici
 
     fetch(url)
         .then(response => response.json())
@@ -96,7 +96,7 @@ function renderWeeks() {
 
 // Fonction pour mettre à jour le résumé
 function updateSummary() {
-    const rentUrl = `http://localhost:3005/api/rent-summary`; // Ajoute ton endpoint pour les données ici
+    const rentUrl = `https://eight-brazen-workshop.glitch.me/api/rent-summary`; // Ajoute ton endpoint pour les données ici
     fetch(rentUrl)
         .then(response => response.json())
         .then(data => {
