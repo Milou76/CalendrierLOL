@@ -31,7 +31,7 @@ function login() {
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
 
-    fetch('http://localhost:3005/api/login', {
+    fetch('https://eight-brazen-workshop.glitch.me', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
