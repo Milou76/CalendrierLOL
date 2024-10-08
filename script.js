@@ -1,4 +1,4 @@
-const sessionDuration = 0 * 60 * 1000; // Durée de session de 500 minutes
+const sessionDuration = 5 * 60 * 1000; // Durée de session de 500 minutes
 let weeks = [];
 let currentWeek = null; // Nouvelle variable globale pour stocker la semaine sélectionnée
 
