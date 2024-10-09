@@ -1,12 +1,12 @@
 body {
     font-family: Arial, sans-serif;
-    background-image: url('DJI_PRAZ.JPG');
+
+    background-image: url('image.JPG');
     background-size: cover;
     margin: 0;
     padding: 20px;
     color: white;
 }
-
 #loginContainer {
     display: flex;
     flex-direction: column;
@@ -16,7 +16,6 @@ body {
     padding: 20px;
     border-radius: 10px;
 }
-
 #calendarContainer {
     display: none;
     margin-top: 20px;
@@ -24,7 +23,6 @@ body {
     padding: 20px;
     border-radius: 10px;
 }
-
 .week {
     padding: 10px;
     border: 1px solid #ccc;
@@ -32,19 +30,15 @@ body {
     cursor: pointer;
     border-radius: 5px;
 }
-
 .week.louee {
     background-color: rgba(255, 0, 0, 0.5); /* Rouge: validée */
 }
-
 .week.quasi-louee {
-    background-color: rgba(255, 94, 0, 0.678); /* Orange: quasi louée */
+    background-color: rgba(255, 102, 0, 0.65); /* Orange: quasi louée */
 }
-
 .week.disponible {
     background-color: rgba(0, 255, 0, 0.5); /* Vert: disponible */
 }
-
 #modal {
     display: none;
     position: fixed;
@@ -57,7 +51,6 @@ body {
     align-items: center;
     z-index: 1000;
 }
-
 #modalContent {
     background: white;
     color: black;
@@ -67,12 +60,10 @@ body {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     animation: fadeIn 0.5s;
 }
-
 @keyframes fadeIn {
     from { opacity: 0; transform: scale(0.8); }
     to { opacity: 1; transform: scale(1); }
 }
-
 button {
     margin-top: 10px;
     padding: 10px;
@@ -82,11 +73,9 @@ button {
     border-radius: 5px;
     cursor: pointer;
 }
-
 button:hover {
     background-color: #0056b3;
 }
-
 #summary {
     position: fixed;
     top: 20px;
